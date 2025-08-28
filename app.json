@@ -25,6 +25,9 @@
     },
     "experiments": {
       "reactServerFunctions": true
-    }
+    },
+    "plugins": [
+      "expo-router"
+    ]
   }
 }
