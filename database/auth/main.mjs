@@ -5,7 +5,7 @@ import { Worker } from "worker_threads";
 import * as Comlink from 'comlink';
 import nodeEndpoint from 'comlink/dist/esm/node-adapter.mjs';
 
-const dirname = typeof __dirname === 'undefined' ? path.dirname(require.resolve('./worker.js')) : path.join(process.cwd(), './database/auth');
+const dirname = /*typeof __dirname === 'undefined' ? path.dirname(require.resolve('./worker.js')) :*/ path.join(process.cwd(), './database/auth');
 
 export function createLocalAuthWorker(table) {
   if (!(fs.existsSync(path.join(dirname, '../data/')))) fs.mkdirSync(path.join(dirname, '../data/'));
