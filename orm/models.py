@@ -92,7 +92,7 @@ class Model:
     async def write(self, values):
         if not values:
             promises = []
-            for record in iter(self):
+            for record in iterable(self):
                 promises.push(record.write(values=record._values[0].data))
             await Promise.all(promises)
             return self
@@ -153,7 +153,7 @@ class Model:
     def toJSON(self):
         if not self.length: return None
         values = []
-        for record in iter(self):
+        for record in iterable(self):
             values.push(Object.assign({'id': record.id}, record._values))
         if self.length == 1: return values[0]
         return values
