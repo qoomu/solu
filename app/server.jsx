@@ -3,6 +3,11 @@
 import App from '../src/components/App';
 import { unstable_headers } from 'expo-router/rsc/headers';
 import utils from '../src/utils';
+import modules from '../modules';
+import * as orm from '../orm';
+import path from 'path';
+
+if (process.env.PG_GATEWAY_PORT) import(path.join(process.cwd(), './database/service.mjs')).then((service) => service.default(orm.models, modules));
 
 export async function DefaultServerComponent() {
   const headers = await unstable_headers();
