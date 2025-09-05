@@ -4,6 +4,8 @@ import { fromNodeSocket } from 'pg-gateway/node';
 
 export default async function(models) {
 
+  if (global.pg_gateway_port) return;
+  global.pg_gateway_port = process.env.PG_GATEWAY_PORT;
   const postgresDb = new PGlite();
   await postgresDb.waitReady;
   const dbMap = {};
