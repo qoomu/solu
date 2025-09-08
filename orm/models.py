@@ -133,7 +133,16 @@ class Model:
         query = new (QueryBuilder())
         query = query.select({'*': __('*', sql)})['from'](sql.raw(f'{self._table_name}'))
         if conditions.length:
-            condition = conditions[0] if conditions.length == 1 else expressions['and'](*conditions)
+            condition = None
+            sql_conditions = []
+            for item in conditions.reverse():
+                if item in ['|', '&']:
+                    group = [sql_item for sql_item in sql_conditions]
+                    sql_conditions.length = 0
+                    sql_conditions.push(expressions['and' if item == '&' else '|'](*group))
+                    continue
+                sql_conditions.push(item)
+            condition = sql_conditions[0] if sql_conditions.length == 1 else expressions['and'](*sql_conditions)
             query = query.where(condition)
         records = await self._exec(query.toSQL())
         recordset = self._new(records)
