@@ -137,9 +137,10 @@ class Model:
             sql_conditions = []
             for item in conditions.reverse():
                 if item in ['|', '&']:
+                    keyword = 'and' if item == '&' else '|'
                     group = [sql_item for sql_item in sql_conditions]
                     sql_conditions.length = 0
-                    sql_conditions.push(expressions['and' if item == '&' else '|'](*group))
+                    sql_conditions.push(expressions[keyword](*group))
                     continue
                 sql_conditions.push(item)
             condition = sql_conditions[0] if sql_conditions.length == 1 else expressions['and'](*sql_conditions)
