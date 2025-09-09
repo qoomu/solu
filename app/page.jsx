@@ -19,7 +19,7 @@ import App from '../src/components/App';
 //   { ssr: false }
 // );
 
-export default async function NoSSR() {
+async function NoSSR() {
   const header = await headers();
   process.env.solu_middleware_path = header.get('referer') ? new URL(header.get('referer')).pathname : '/';
   process.env.solu_middleware_cookie = header.get('cookie');
@@ -28,3 +28,5 @@ export default async function NoSSR() {
   //   React.createElement(NoSsrComponent)
   // );
 }
+
+export default () => NoSSR();
