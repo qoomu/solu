@@ -1,3 +1,4 @@
+import 'server-only';
 import * as orm_models from './models.py';
 import * as orm_fields from './fields.py';
 import * as orm_data from './data.py';
