@@ -1,7 +1,8 @@
 # Solu Framework
 Solu is a full featured isomorphic framework, under the hood we use:
 - The [new](https://expo.dev/changelog/2024/10-24-sdk-52-beta#expo-router) Expo React Server Components or
-- [Waku](https://github.com/dai-shi/waku) and plain [RNW](https://necolas.github.io/react-native-web/)
+- <del>[Waku](https://github.com/dai-shi/waku) and plain [RNW](https://necolas.github.io/react-native-web/)</del>
+- [Next.js with Expo](https://docs.expo.dev/guides/using-nextjs/) combining Expo Router and Next.js app router with RSC for more stability (There is `<input>` and `<TextInput>` bug in Expo RSC)
 
 # Purpose of this project
 - Replacing or making an alternative to Odoo and Python's (2.7-3.2) synchronous, I/O blocking design with a better and leaner alternative that hopefully supports full decentralized/multi-clustered design.
