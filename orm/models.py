@@ -121,7 +121,7 @@ class Model:
         for args in domain:
             field, operator, value = args
             if operator == '=': conditions.push(expressions.eq(sql.raw(f"data->'{field}'"), sql.raw(f"'{JSON.stringify(value)}'::jsonb")))
-            elif operator == '!=': conditions.push(expressions.neq(sql.raw(f"data->'{field}'"), sql.raw(f"'{JSON.stringify(value)}'::jsonb")))
+            elif operator == '!=': conditions.push(expressions.ne(sql.raw(f"data->'{field}'"), sql.raw(f"'{JSON.stringify(value)}'::jsonb")))
             elif operator == 'in': conditions.push(expressions.inArray(sql.raw(f"data->'{field}'"), sql.raw(f"'{JSON.stringify(value)}'::jsonb")))
             elif operator == 'not in': conditions.push(expressions.notInArray(sql.raw(f"data->'{field}'"), sql.raw(f"'{JSON.stringify(value)}'::jsonb")))
             elif operator == '>': conditions.push(expressions.gt(sql.raw(f"data->'{field}'"), sql.raw(f"'{JSON.stringify(value)}'::jsonb")))

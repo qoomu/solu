@@ -11,13 +11,21 @@
     "types": [
       "react/experimental"
     ],
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "outDir": "./dist",
-    "composite": true
+    "composite": true,
+    "incremental": true,
+    "isolatedModules": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
   },
   "include": [
     "./src",
-    "./waku.config.ts"
+    "./waku.config.ts",
+    ".next/types/**/*.ts"
   ],
   "extends": "expo/tsconfig.base"
 }

@@ -1,6 +1,6 @@
 import { rsc } from 'rsc-env';
 
-const utils = !rsc ? (await import('./helpers.client.js')).default : (await import('./helpers.server.js')).default;
+const utils = !rsc ? (require('./helpers.client.js')).default : (require('./helpers.server.js')).default;
 
 let appTitle = 'App';
 

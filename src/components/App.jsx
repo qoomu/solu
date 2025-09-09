@@ -1,3 +1,5 @@
+'use server';
+import 'server-only';
 import Home from './Home';
 import Dashboard from './dashboard/App';
 
@@ -9,10 +11,10 @@ process.on('uncaughtException', (error) => console.error(error));
 
 const wait_tasks = orm.data.load().then(() => modules);
 
-const App = async ({ name }: { name: string }) => {
+const App = async () => {
   await wait_tasks;
   return (
-    <html>
+    <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui, viewport-fit=cover"/>
         <meta name="mobile-web-app-capable" content="yes"/>
