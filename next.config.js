@@ -7,7 +7,6 @@ module.exports = withExpo({
     'react-native',
     'react-native-web',
     'expo',
-    'orm',
     // Add more React Native/Expo packages here...
   ],
   webpack: (config, { webpack }) => {
