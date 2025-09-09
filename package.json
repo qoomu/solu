@@ -35,7 +35,7 @@
     "react-dom": "19.0.0",
     "react-native": "0.79.5",
     "react-native-web": "^0.19.13",
-    "react-native-web-image-loader": "https://github.com/qoomu/react-native-web-image-loader/archive/refs/heads/build.zip",
+    "react-native-web-image-loader": "https://github.com/qoomu/react-native-web-image-loader/archive/refs/heads/build.tar.gz",
     "react-refresh": "^0.17.0",
     "react-server-dom-webpack": "19.0.0",
     "rsc-env": "^0.0.2",
