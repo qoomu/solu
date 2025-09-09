@@ -11,22 +11,14 @@ module.exports = withExpo({
     // Add more React Native/Expo packages here...
   ],
   webpack: (config, { webpack }) => {
-      config.experiments = { ...config.experiments };
-      config.externals["node:fs"] = "commonjs node:fs";
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-      };
-      config.plugins.push(
-
-        new webpack.NormalModuleReplacementPlugin(
-          /^node:/,
-          (resource) => {
-            resource.request = resource.request.replace(/^node:/, '');
-          },
-        ),
-      );
-  
+      config.module.rules.push({
+        test: /\.(png|svg|jpe?g|gif)$/i,
+        loader: 'react-native-web-image-loader',
+        options: {
+          name: 'static/[hash].[ext]',
+          esModule: false,
+        }
+      });
       return config;
    },
    env: {
