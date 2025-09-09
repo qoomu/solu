@@ -31,3 +31,9 @@ for (let module of modules) {
 }
 fs.writeFileSync(path.join(modules_path, 'index.js'), server_modules.join('\n'));
 fs.writeFileSync(path.join(modules_path, 'client.js'), client_modules.join('\n'));
+
+const nextDir = path.join(__dirname, '../../.next');
+if (fs.existsSync(nextDir)) {
+  if (fs.rmSync) fs.rmSync(tempdir, {recursive: true});
+  else fs.rmdirSync(tempdir, {recursive: true});
+}
