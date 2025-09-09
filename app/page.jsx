@@ -2,6 +2,12 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import { headers } from 'next/headers';
 import App from '../src/components/App';
+import modules from '../modules';
+import * as orm from '../orm';
+import path from 'path';
+
+if (process.env.PG_GATEWAY_PORT) eval(`import(${JSON.stringify(path.join(process.cwd(), './database/service.mjs'))})`).then((service) => service.default(orm.models, modules));
+
 
 // const plugins = [
 //   'python',
