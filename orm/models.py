@@ -130,14 +130,15 @@ class Model:
             elif operator == '<=': conditions.push(expressions.lte(sql.raw(f"data->'{field}'"), sql.raw(f"'{JSON.stringify(value)}'::jsonb")))
             elif operator == 'like': conditions.push(expressions.like(sql.raw(f"data->>'{field}'"), ('%' + value + '%') if not value.includes('%') else value))
             elif operator == 'ilike': conditions.push(expressions.ilike(sql.raw(f"data->>'{field}'"), ('%' + value + '%') if not value.includes('%') else value))
+            else: conditions.push(args)
         query = new (QueryBuilder())
         query = query.select({'*': __('*', sql)})['from'](sql.raw(f'{self._table_name}'))
         if conditions.length:
             condition = None
             sql_conditions = []
             for item in conditions.reverse():
-                if item in ['|', '&']:
-                    keyword = 'and' if item == '&' else '|'
+                if item == '|' or item == '&':
+                    keyword = 'and' if item == '&' else 'or'
                     group = [sql_item for sql_item in sql_conditions]
                     sql_conditions.length = 0
                     sql_conditions.push(expressions[keyword](*group))
