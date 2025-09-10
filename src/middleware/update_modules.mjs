@@ -34,6 +34,6 @@ fs.writeFileSync(path.join(modules_path, 'client.js'), client_modules.join('\n')
 
 const nextDir = path.join(__dirname, '../../.next');
 if (fs.existsSync(nextDir)) {
-  if (fs.rmSync) fs.rmSync(tempdir, {recursive: true});
-  else fs.rmdirSync(tempdir, {recursive: true});
+  if (fs.rmSync) fs.rmSync(nextDir, {recursive: true});
+  else fs.rmdirSync(nextDir, {recursive: true});
 }
