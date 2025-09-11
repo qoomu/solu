@@ -1,4 +1,4 @@
-attributes = ['required', 'readonly', 'defaults', 'compute', 'related', 'no_offline', 'protect']
+attributes = ['required', 'readonly', 'defaults', 'compute', 'related', 'no_offline', 'protect', 'defaults']
 
 class Field:
     def __init__(self, fields):
@@ -8,10 +8,10 @@ class Field:
 def field_factory(*args): return new (Field(Object.assign(*args.reverse())))
 
 def Char(string, **params):
-    return field_factory({'type': 'char', 'string': string, 'store': params.store if 'store' in params else True, 'index': params.index if 'index' in params else True}, Object.fromEntries([[attribute, params[attribute] or None] for attribute in Object.keys(attributes)]))
+    return field_factory({'type': 'char', 'string': string, 'store': params.store if 'store' in params else True, 'index': params.index if 'index' in params else True, 'defaults': params.defaults or ''}, Object.fromEntries([[attribute, params[attribute] or None] for attribute in Object.keys(attributes)]))
 
 def Text(string, **params):
-    return field_factory({'type': 'text', 'string': string, 'store': params.store if 'store' in params else True, 'index': params.index if 'index' in params else True}, Object.fromEntries([[attribute, params[attribute] or None] for attribute in Object.keys(attributes)]))
+    return field_factory({'type': 'text', 'string': string, 'store': params.store if 'store' in params else True, 'index': params.index if 'index' in params else True, 'defaults': params.defaults or ''}, Object.fromEntries([[attribute, params[attribute] or None] for attribute in Object.keys(attributes)]))
 
 def Integer(string, **params):
     return field_factory({'type': 'integer', 'string': string, 'store': params.store if 'store' in params else True, 'index': params.index if 'index' in params else True, 'defaults': params.defaults or 0}, Object.fromEntries([[attribute, params[attribute] or None] for attribute in Object.keys(attributes)]))
