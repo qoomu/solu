@@ -1,4 +1,4 @@
-from orm import models, fields
+from orm import models, fields, data
 
 class Sequence(models.Model):
     _name = 'ir.sequence'
@@ -16,3 +16,13 @@ class Sequence(models.Model):
         return next_sequence(self)
 
 models.register(Sequence)
+
+def add_sequence(code, sequences):
+    async def create_sequence():
+        sequence_id = await models.env['ir.sequence'].search(['code', '=', code], limit=1)
+        if not sequence_id.length:
+            sequence_id = await models.env['ir.sequence'].create({'code': code})
+        if sequences: sequences[sequence_id.code] = sequence_id.id
+    data.register(create_sequence)
+
+__all__ = ['add_sequence']
