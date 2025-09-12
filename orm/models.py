@@ -165,7 +165,7 @@ class Model:
         if not self.length: return None
         values = []
         for record in iterable(self):
-            values.push(Object.assign({'id': record.id}, record._values))
+            values.push(Object.assign({'id': record.id}, record._values[0].data))
         if self.length == 1: return values[0]
         return values
 
