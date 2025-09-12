@@ -15,6 +15,6 @@ export function createLocalWorker(table) {
   if (!(fs.existsSync(path.join(dirname, './data/')))) fs.mkdirSync(path.join(dirname, './data/'));
   const worker = Comlink.wrap(nodeEndpoint(new Worker(path.join(dirname, './worker.js'))))
   worker.init('pglite', path.join(dirname, './data/' + table), table);
-  globals.soluPgWorkers[table] = worker;
+  global.soluPgWorkers[table] = worker;
   return worker;
 };
