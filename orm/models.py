@@ -130,7 +130,11 @@ class Model:
             elif operator == '<=': conditions.push(expressions.lte(sql.raw(f"data->'{field}'"), sql.raw(f"'{JSON.stringify(value)}'::jsonb")))
             elif operator == 'like': conditions.push(expressions.like(sql.raw(f"data->>'{field}'"), ('%' + value + '%') if not value.includes('%') else value))
             elif operator == 'ilike': conditions.push(expressions.ilike(sql.raw(f"data->>'{field}'"), ('%' + value + '%') if not value.includes('%') else value))
-            else: conditions.push(args)
+            elif args in ['|', '&']: conditions.push(args)
+            #else:
+            #    error = new (Error('Invalid domain argument'))
+            #    console.error(error, args)
+            #    raise error
         query = new (QueryBuilder())
         query = query.select({'*': __('*', sql)})['from'](sql.raw(f'{self._table_name}'))
         if conditions.length:
