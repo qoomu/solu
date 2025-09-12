@@ -8,7 +8,7 @@ import nodeEndpoint from 'comlink/dist/esm/node-adapter.mjs';
 //const dirname = path.dirname(require.resolve('./worker.js'));
 const dirname = /*typeof __dirname === 'undefined' ? path.dirname(require.resolve('./worker.js')) :*/ path.join(process.env.SOLU_NEXTJS_ROOT || process.cwd(), './database');
 
-global.soluPgWorkers = {};
+if (!global.soluPgWorkers) global.soluPgWorkers = {};
 
 export function createLocalWorker(table) {
   if (table in global.soluPgWorkers) return global.soluPgWorkers[table];
