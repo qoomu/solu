@@ -180,6 +180,11 @@ def __iter__():
 
 Model.prototype[Symbol.iterator] = __iter__
 
+def toPrimitive():
+    return self.toJSON()
+
+Model.prototype[Symbol.toPrimitive] = toPrimitive
+
 env = {}
 
 def register(model_class):
