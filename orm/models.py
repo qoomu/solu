@@ -96,9 +96,19 @@ class Model:
                 promises.push(record.write(values=record._values[0].data))
             await Promise.all(promises)
             return self
+        promises = []
+        for key in dict(value):
+            item = value[key]
+            if key not in self._fields: raise new (Error(key + ' is not registered as ' + self._name + ' fields'))
+            if self._fields[key].type == 'binary':
+                if typeof(item) == 'string': continue
+                if not isinstance(item, FormData): raise new (Error('fields.Binary must be string (URL) or FormData (with keys file and type as the binary data and the mime type)'))
+                else:
+                    promises.push(self.env['ir.attachment'].saveToFilesystem(item.get('file'), item.get('type')).then(lambda result: Object.assign(value, {key: '/attachments/' + result.name + '?id=' + result.id})))
+        await Promise.all(promises)
         ids = self.ids
         update = self.env[self._name]._db_orm.update(self.env[self._name]._db_orm_table)
-        records = await self._exec(update.set(values).where(expressions.inArray(sql.raw(f'id'), ids)).returning({'*': __('*', sql)}).toSQL())
+        records = await self._exec(update.set({'data': sql.raw(f"'{JSON.stringify(value)}'::jsonb")}).where(expressions.inArray(sql.raw(f'id'), ids)).returning({'*': __('*', sql)}).toSQL())
         recordset = self._new(records)
         return recordset
 
