@@ -3,11 +3,11 @@ const path = require('path');
 const crypto = require('crypto');
 
 function getPath(hash, directoryOnly, relativeOnly) {
-  const level_1 = hashed.slice(0, 1);
-  const level_2 = hashed.slice(1, 3);
-  const dir = `./data/filesystem/${level_1}/${level_2}/${!directoryOnly ? hashed : ''}`;
-  if (relativeOnly) return path.posix.join('database', dir);
-  return path.join(__dirname, dir);
+  const level_1 = hash.slice(0, 1);
+  const level_2 = hash.slice(1, 3);
+  const dir = `./database/data/filesystem/${level_1}/${level_2}/${!directoryOnly ? hash : ''}`;
+  if (relativeOnly) return dir; //path.posix.join('database', dir);
+  return path.join(process.cwd(), dir);
 }
 
 async function saveFile(buffer, mimeType) {

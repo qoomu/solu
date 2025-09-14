@@ -9,7 +9,7 @@ class Attachment(models.Model):
 
     async def saveToFilesystem(self, buffer, mimeType):
         hash = await saveFile(buffer, mimeType)
-        result = await self.create({'name': hash, 'path': getPath(hash, True)})
+        result = await self.create({'name': hash, 'path': getPath(hash)})
         return result
 
     async def unlink(self, ids):
