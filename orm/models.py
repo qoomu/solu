@@ -155,6 +155,7 @@ class Model:
         return recordset
 
     async def unlink(self, ids):
+        if not ids: ids = self.ids
         delete_from = self.env[self._name]._db_orm.delete(self.env[self._name]._db_orm_table)
         await self._exec(delete_from.where(expressions.inArray(self.env[self._name]._db_orm_table.id, ids)).toSQL())
         return None

@@ -13,6 +13,7 @@ if (!global.soluPgWorkers) global.soluPgWorkers = {};
 export function createLocalWorker(table) {
   if (table in global.soluPgWorkers) return global.soluPgWorkers[table];
   if (!(fs.existsSync(path.join(dirname, './data/')))) fs.mkdirSync(path.join(dirname, './data/'));
+  if (!(fs.existsSync(path.join(dirname, './data/filesystem/')))) fs.mkdirSync(path.join(dirname, './data/filesystem/'));
   const worker = Comlink.wrap(nodeEndpoint(new Worker(path.join(dirname, './worker.js'))))
   worker.init('pglite', path.join(dirname, './data/' + table), table);
   global.soluPgWorkers[table] = worker;
