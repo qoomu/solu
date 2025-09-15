@@ -42,6 +42,7 @@ def Many2many(relation, string, **params):
 #    return field_factory({'type': 'one2one', 'relation': relation, 'ondelete': 'cascade', 'string': string, 'store': params.store if 'store' in params else True, 'index': params.index if 'index' in params else True}, Object.fromEntries([[attribute, params[attribute] or None] for attribute in Object.keys(attributes)]))
 
 def Selection(selection, **params):
+    if params.selection: selection = params.selection
     return field_factory({'type': 'selection', 'selection': selection, 'string': params.string, 'store': params.store if 'store' in params else True, 'index': params.index if 'index' in params else True}, Object.fromEntries([[attribute, params[attribute] or None] for attribute in Object.keys(attributes)]))
 
 def Date(string, **params):
