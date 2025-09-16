@@ -27,8 +27,10 @@ class Model:
         self._values = []
         self._db_worker = self.env[self._name]._db_worker
         self._table_name = self._name.split('.').join('_')
-        self._fields.id = fields.Char(string="ID (UUID)", required=True)
+        self._fields.id = fields.Char(string="ID (UUID)", required=True, readonly=True)
         self._fields.id.name = 'id'
+        self._fields.create_date = fields.Char(string="Created At", required=True, readonly=True)
+        self._fields.create_date.name = 'create_date'
         for key in Object.getOwnPropertyNames(self.constructor.prototype):
             if key == 'id':
                 del self[key]
@@ -41,6 +43,7 @@ class Model:
             Object.defineProperty(self, key, {'get': lambda: self._getattr(key), 'set': lambda value: self._setattr(key, value)})
             if self._is_env and field.index and field.name != 'id': self._db_worker.createIndex(key)
         Object.defineProperty(self, 'id', {'get': lambda: self._getattr('id'), 'set': lambda value: self._setattr('id', value)})
+        Object.defineProperty(self, 'create_date', {'get': lambda: self._getattr('create_date'), 'set': lambda value: self._setattr('create_date', value)})
 
     def __len__(self):
         return len(self._values)
@@ -81,9 +84,19 @@ class Model:
     async def create(self, values):
         create_date = new (Date()).toISOString()
         if not Array.isArray(values): values = [values]
+        promises = []
         for value in values:
             value.create_date = create_date
             del value.id
+            for key in dict(value):
+                item = value[key]
+                if key not in self._fields: raise new (Error(key + ' is not registered as ' + self._name + ' fields'))
+                if self._fields[key].type == 'binary':
+                    if typeof(item) == 'string': continue
+                    if not isinstance(item, FormData): raise new (Error('fields.Binary must be string (URL) or FormData (with keys file and type as the binary data and the mime type)'))
+                    else:
+                        promises.push(self.env['ir.attachment'].saveToFilesystem(item.get('file'), item.get('type')).then(lambda result: Object.assign(value, {key: '/attachments/' + result.name + '?id=' + result.id})))
+        await Promise.all(promises)
         insert = self.env[self._name]._db_orm.insert(self.env[self._name]._db_orm_table)
         records = await self._exec(insert.values([{'data': sql.raw(f"'{JSON.stringify(value)}'::jsonb")} for value in values]).returning({'*': __('*', sql)}).toSQL())
         recordset = self._new(records)
