@@ -111,6 +111,9 @@ class Model:
                     else:
                         promises.push(self.env['ir.attachment'].saveToFilesystem(item.get('file'), item.get('type')).then(lambda result: Object.assign(value, {key: '/attachments/' + result.name + '?id=' + result.id})))
                 elif self._fields[key].type == 'one2many': del value[key]
+            for key in dict(self._fields):
+                if key in value: continue
+                value[key] = self._fields[key].defaults
         await Promise.all(promises)
         insert = self.env[self._name]._db_orm.insert(self.env[self._name]._db_orm_table)
         records = await self._exec(insert.values([{'data': sql.raw(f"'{JSON.stringify(value)}'::jsonb")} for value in values]).returning({'*': __('*', sql)}).toSQL())
@@ -125,6 +128,7 @@ class Model:
             await Promise.all(promises)
             return self
         promises = []
+        related_field_values = {}
         for key in dict(value):
             item = value[key]
             if key not in self._fields: raise new (Error(key + ' is not registered as ' + self._name + ' fields'))
@@ -134,10 +138,17 @@ class Model:
                 else:
                     promises.push(self.env['ir.attachment'].saveToFilesystem(item.get('file'), item.get('type')).then(lambda result: Object.assign(value, {key: '/attachments/' + result.name + '?id=' + result.id})))
             elif self._fields[key].type == 'one2many': del value[key] 
+            elif self._fields[key].related and '.' in self._fields[key].related:
+                related, related_field = self._fields[key].related.split('.')
+                if not related_field_values[related]: related_field_values[related] = {}
+                related_field_values[related][related_field] = item
+        for record in self:
+            for field in dict(related_field_values):
+                promises.push(self._new({'id': record[field], 'data': {}}).write(related_field_values[field]))
         await Promise.all(promises)
         ids = self.ids
         update = self.env[self._name]._db_orm.update(self.env[self._name]._db_orm_table)
-        records = await self._exec(update.set({'data': sql.raw(f"'{JSON.stringify(value)}'::jsonb")}).where(expressions.inArray(sql.raw(f'id'), ids)).returning({'*': __('*', sql)}).toSQL())
+        records = await self._exec(update.set({'data': sql.raw(f"data || '{JSON.stringify(value)}'::jsonb")}).where(expressions.inArray(sql.raw(f'id'), ids)).returning({'*': __('*', sql)}).toSQL())
         recordset = await self._new(records, True)
         return recordset
 
