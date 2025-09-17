@@ -234,7 +234,7 @@ class Model:
             related_data = {}
             for field in single_level_related_fields:
                 related_data[field.name] = record._values[0].data[field.related]
-            values.push(Object.assign({'id': record.id}, record._values[0].data, related_data))
+            values.push(Object.assign(record._values[0].data, related_data, {'id': record.id}))
         if self.length == 1: return values[0]
         return values
 
