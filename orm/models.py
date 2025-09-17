@@ -74,11 +74,14 @@ class Model:
                 promises = []
                 for record in iterable(records):
                     for field_name in dict(self._fields):
+                        #TODO: Fix Javascripthon not initiating new declaration ber block
+                        JS('let field')
                         field = self._fields[field_name]
                         if field.type == 'one2many':
                             #Maybe do this on parallel with browse so the operation would be faster
                             promises.push(self.env[field.relation].search([(field.inverse, '=', record.id)], count=True).then(lambda records: Object.assign(record._values[0].data, {field_name: records.ids})))
                         elif field.related and '.' in field.related:
+                            JS('let related, related_field')
                             related, related_field = field.related.split('.')
                             if self._fields[related].type != 'many2one': raise new (Error('A related field should have many2one as its first field'))
                             promises.push(self.env[self._fields[related].relation].browse(record[related]).then(lambda related_record: Object.assign(record._values[0].data, {field_name: related_record[related_field]})))
