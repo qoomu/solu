@@ -54,7 +54,7 @@ class Model:
         return False
 
     def _getattr(self, field):
-        if not self._values.length: raise new (Error('Expected singleton, but instead got an empty recordset'))
+        if not self._values.length: return self._fields[field].defaults #raise new (Error('Expected singleton, but instead got an empty recordset'))
         if not self._is_singleton: raise new (Error('Expected singleton, but instead got a set of records'))
         if field == 'id': return self._values[0].id
         return self._values[0].data[field]
