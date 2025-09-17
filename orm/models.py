@@ -82,6 +82,7 @@ class Model:
                             related, related_field = field.related.split('.')
                             if self._fields[related].type != 'many2one': raise new (Error('A related field should have many2one as its first field'))
                             promises.push(self.env[self._fields[related].relation].browse(record[related]).then(lambda record: Object.assign(record._values[0].data, {field_name: record[related_field]})))
+                return records
             return read_records()
         return records
 
@@ -111,9 +112,10 @@ class Model:
                     else:
                         promises.push(self.env['ir.attachment'].saveToFilesystem(item.get('file'), item.get('type')).then(lambda result: Object.assign(value, {key: '/attachments/' + result.name + '?id=' + result.id})))
                 elif self._fields[key].type == 'one2many': del value[key]
-            for key in dict(self._fields):
-                if key in value: continue
-                value[key] = self._fields[key].defaults
+            if True: #TODO: fix Javascripthon not able to handle key loop 2 times in one block
+                for key in dict(self._fields):
+                    if key in value: continue
+                    value[key] = self._fields[key].defaults
         await Promise.all(promises)
         insert = self.env[self._name]._db_orm.insert(self.env[self._name]._db_orm_table)
         records = await self._exec(insert.values([{'data': sql.raw(f"'{JSON.stringify(value)}'::jsonb")} for value in values]).returning({'*': __('*', sql)}).toSQL())
