@@ -72,7 +72,7 @@ class Model:
         if read:
             async def read_records():
                 promises = []
-                for record in records:
+                for record in iterable(records):
                     for field_name in dict(self._fields):
                         field = self._fields[field_name]
                         if field.type == 'one2many':
@@ -144,7 +144,7 @@ class Model:
                 related, related_field = self._fields[key].related.split('.')
                 if not related_field_values[related]: related_field_values[related] = {}
                 related_field_values[related][related_field] = item
-        for record in self:
+        for record in iterable(self):
             for field in dict(related_field_values):
                 promises.push(self._new({'id': record[field], 'data': {}}).write(related_field_values[field]))
         await Promise.all(promises)
