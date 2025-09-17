@@ -40,7 +40,7 @@ class Model:
             field.name = key
             self._fields[key] = field
             del self[key]
-            Object.defineProperty(self, key, {'get': lambda: self._getattr(key), 'set': lambda value: self._setattr(key, value)})
+            Object.defineProperty(self, key, {'get': lambda: self._getattr(key if not field.related or '.' not in field.related else field.related), 'set': lambda value: self._setattr(key if not field.related or '.' not in field.related else field.related, value)})
             if self._is_env and field.index and field.name != 'id': self._db_worker.createIndex(key)
         Object.defineProperty(self, 'id', {'get': lambda: self._getattr('id'), 'set': lambda value: self._setattr('id', value)})
         Object.defineProperty(self, 'create_date', {'get': lambda: self._getattr('create_date'), 'set': lambda value: self._setattr('create_date', value)})
@@ -65,10 +65,24 @@ class Model:
         if field == 'id': raise new (Error('Cannot set ID'))
         self._values[0].data[field] = value
 
-    def _new(self, values):
+    def _new(self, values, read):
         records = new (self.constructor())
         if not Array.isArray(values): values = [values]
         records._values = values
+        if read:
+            async def read_records():
+                promises = []
+                for record in records:
+                    for field_name in dict(self._fields):
+                        field = self._fields[field_name]
+                        if field.type == 'one2many':
+                            #Maybe do this on parallel with browse so the operation would be faster
+                            promises.push(self.env[field.relation].search([(field.inverse, '=', record.id)], count=True).then(lambda records: Object.assign(record._values[0].data, {field_name: records.ids})))
+                        elif field.related and '.' in field.related:
+                            related, related_field = field.related.split('.')
+                            if self._fields[related].type != 'many2one': raise new (Error('A related field should have many2one as its first field'))
+                            promises.push(self.env[self._fields[related].relation].browse(record[related]).then(lambda record: Object.assign(record._values[0].data, {field_name: record[related_field]})))
+            return read_records()
         return records
 
     def _prebrowse(self, ids):
@@ -96,10 +110,11 @@ class Model:
                     if not isinstance(item, FormData): raise new (Error('fields.Binary must be string (URL) or FormData (with keys file and type as the binary data and the mime type)'))
                     else:
                         promises.push(self.env['ir.attachment'].saveToFilesystem(item.get('file'), item.get('type')).then(lambda result: Object.assign(value, {key: '/attachments/' + result.name + '?id=' + result.id})))
+                elif self._fields[key].type == 'one2many': del value[key]
         await Promise.all(promises)
         insert = self.env[self._name]._db_orm.insert(self.env[self._name]._db_orm_table)
         records = await self._exec(insert.values([{'data': sql.raw(f"'{JSON.stringify(value)}'::jsonb")} for value in values]).returning({'*': __('*', sql)}).toSQL())
-        recordset = self._new(records)
+        recordset = await self._new(records, True)
         return recordset
 
     async def write(self, values):
@@ -118,18 +133,19 @@ class Model:
                 if not isinstance(item, FormData): raise new (Error('fields.Binary must be string (URL) or FormData (with keys file and type as the binary data and the mime type)'))
                 else:
                     promises.push(self.env['ir.attachment'].saveToFilesystem(item.get('file'), item.get('type')).then(lambda result: Object.assign(value, {key: '/attachments/' + result.name + '?id=' + result.id})))
+            elif self._fields[key].type == 'one2many': del value[key] 
         await Promise.all(promises)
         ids = self.ids
         update = self.env[self._name]._db_orm.update(self.env[self._name]._db_orm_table)
         records = await self._exec(update.set({'data': sql.raw(f"'{JSON.stringify(value)}'::jsonb")}).where(expressions.inArray(sql.raw(f'id'), ids)).returning({'*': __('*', sql)}).toSQL())
-        recordset = self._new(records)
+        recordset = await self._new(records, True)
         return recordset
 
     async def browse(self, ids):
         if not Array.isArray(ids): ids = [ids]
         query = new (QueryBuilder())
         records = await self._exec(query.select({'*': __('*', sql)})['from'](sql.raw(f'{self._table_name}')).where(expressions.inArray(self.env[self._name]._db_orm_table.id, ids)).toSQL())
-        recordset = self._new(records)
+        recordset = await self._new(records, True)
         return recordset
 
     async def search(self, domain, **params): #limit=100, page=1, order=''):
@@ -174,7 +190,7 @@ class Model:
             condition = sql_conditions[0] if sql_conditions.length == 1 else expressions['and'](*sql_conditions)
             query = query.where(condition)
         records = await self._exec(query.toSQL())
-        recordset = self._new(records)
+        recordset = await self._new(records, True if not params.count else False)
         return recordset
 
     async def unlink(self, ids):
@@ -192,8 +208,16 @@ class Model:
     def toJSON(self):
         if not self.length: return None
         values = []
+        single_level_related_fields = []
+        for field_name in dict(self._fields):
+            field = self._fields[field_name]
+            if field.related and '.' not in field.related:
+                single_level_related_fields.push(field)
         for record in iterable(self):
-            values.push(Object.assign({'id': record.id}, record._values[0].data))
+            related_data = {}
+            for field in single_level_related_fields:
+                related_data[field.name] = record._values[0].data[field.related]
+            values.push(Object.assign({'id': record.id}, record._values[0].data, related_data))
         if self.length == 1: return values[0]
         return values
 
