@@ -32,6 +32,7 @@ class Model:
         self._fields.create_date = fields.Char(string="Created At", required=True, readonly=True)
         self._fields.create_date.name = 'create_date'
         for key in Object.getOwnPropertyNames(self.constructor.prototype):
+            JS('let field')
             if key == 'id':
                 del self[key]
                 continue
@@ -40,7 +41,7 @@ class Model:
             field.name = key
             self._fields[key] = field
             del self[key]
-            Object.defineProperty(self, key, {'get': lambda: self._getattr(key if not field.related or '.' not in field.related else field.related), 'set': lambda value: self._setattr(key if not field.related or '.' not in field.related else field.related, value)})
+            Object.defineProperty(self, key, {'get': lambda: self._getattr(key if not field.related or '.' in field.related else field.related), 'set': lambda value: self._setattr(key if not field.related or '.' in field.related else field.related, value)})
             if self._is_env and field.index and field.name != 'id': self._db_worker.createIndex(key)
         Object.defineProperty(self, 'id', {'get': lambda: self._getattr('id'), 'set': lambda value: self._setattr('id', value)})
         Object.defineProperty(self, 'create_date', {'get': lambda: self._getattr('create_date'), 'set': lambda value: self._setattr('create_date', value)})
@@ -109,7 +110,7 @@ class Model:
             del value.id
             for key in dict(value):
                 item = value[key]
-                if key not in self._fields: raise new (Error(key + ' is not registered as ' + self._name + ' fields'))
+                if key not in self._fields: del value[key] #raise new (Error(key + ' is not registered as ' + self._name + ' fields'))
                 if self._fields[key].type == 'binary':
                     if typeof(item) == 'string': continue
                     if not isinstance(item, FormData): raise new (Error('fields.Binary must be string (URL) or FormData (with keys file and type as the binary data and the mime type)'))
@@ -137,7 +138,7 @@ class Model:
         related_field_values = {}
         for key in dict(value):
             item = value[key]
-            if key not in self._fields: raise new (Error(key + ' is not registered as ' + self._name + ' fields'))
+            if key not in self._fields: del value[key] #raise new (Error(key + ' is not registered as ' + self._name + ' fields'))
             if self._fields[key].type == 'binary':
                 if typeof(item) == 'string': continue
                 if not isinstance(item, FormData): raise new (Error('fields.Binary must be string (URL) or FormData (with keys file and type as the binary data and the mime type)'))
