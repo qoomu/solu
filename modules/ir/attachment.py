@@ -1,5 +1,5 @@
 from orm import models, fields
-from ....database.file import saveFile, deleteFile, getPath
+from ...database.file import saveFile, deleteFile, getPath
 
 class Attachment(models.Model):
     _name = 'ir.attachment'

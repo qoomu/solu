@@ -29,7 +29,7 @@ class Model:
         self._table_name = self._name.split('.').join('_')
         self._fields.id = fields.Char(string="ID (UUID)", required=True, readonly=True)
         self._fields.id.name = 'id'
-        self._fields.create_date = fields.Char(string="Created At", required=True, readonly=True)
+        self._fields.create_date = fields.Datetime(string="Created At", required=True, readonly=True)
         self._fields.create_date.name = 'create_date'
         for key in Object.getOwnPropertyNames(self.constructor.prototype):
             JS('let field')
@@ -70,6 +70,16 @@ class Model:
         records = new (self.constructor())
         if not Array.isArray(values): values = [values]
         records._values = values
+        for value in values:
+            for key in dict(self._fields):
+                field = self._fields[key]
+                if field.type in ['date', 'datetime']:
+                    if value.data[key]:
+                        date = new (Date(value.data[key]))
+                        if not isNaN(date):
+                            value.data[key] = date
+                            continue
+                    value.data[key] = ''
         if read:
             async def read_records():
                 promises = []
@@ -105,18 +115,32 @@ class Model:
         create_date = new (Date()).toISOString()
         if not Array.isArray(values): values = [values]
         promises = []
+        deferreds = []
         for value in values:
             value.create_date = create_date
             del value.id
             for key in dict(value):
                 item = value[key]
-                if key not in self._fields: del value[key] #raise new (Error(key + ' is not registered as ' + self._name + ' fields'))
+                if key not in self._fields: continue #raise new (Error(key + ' is not registered as ' + self._name + ' fields'))
                 if self._fields[key].type == 'binary':
-                    if typeof(item) == 'string': continue
+                    if typeof(item) == 'string' or not item: continue
                     if not isinstance(item, FormData): raise new (Error('fields.Binary must be string (URL) or FormData (with keys file and type as the binary data and the mime type)'))
                     else:
                         promises.push(self.env['ir.attachment'].saveToFilesystem(item.get('file'), item.get('type')).then(lambda result: Object.assign(value, {key: '/attachments/' + result.name + '?id=' + result.id})))
-                elif self._fields[key].type == 'one2many': del value[key]
+                elif self._fields[key].type == 'one2many':
+                    for child in item:
+                        if typeof(child) == 'string':
+                            if self.ids.length > 1: raise new (Error('Writing one2many fields is only possible in singleton recordset'))
+                            if self.ids.length != 0:
+                                promise = self.env[self._fields[key].relation].browse(child).then(lambda records: records.write({self._fields[key].inverse: self.id}))
+                                promises.push(promise)
+                            else: deferreds.push([self._fields[key].relation, self._fields[key].inverse, child])
+                        elif not Array.isArray(child):
+                            if child.id:
+                                promise = self.env[self._fields[key].relation].browse(child.id).then(lambda records: records.write(child))
+                                promises.push(promise)
+                            else: deferreds.push([self._fields[key].relation, self._fields[key].inverse, child])
+                    del value[key]
             if True: #TODO: fix Javascripthon not able to handle key loop 2 times in one block
                 for key in dict(self._fields):
                     if key in value: continue
@@ -124,34 +148,58 @@ class Model:
         await Promise.all(promises)
         insert = self.env[self._name]._db_orm.insert(self.env[self._name]._db_orm_table)
         records = await self._exec(insert.values([{'data': sql.raw(f"'{JSON.stringify(value)}'::jsonb")} for value in values]).returning({'*': __('*', sql)}).toSQL())
+        new_promises = []
+        for record in iterable(records):
+            for deferred in deferreds:
+                model, inverse, value = deferred
+                if typeof(value) != 'string': value[inverse] = record.id
+                promise = self.env[model].create(value) if typeof(value) != 'string' else self.env[model].browse(value).then(lambda records: records.write({inverse: record.id}))
+                new_promises.push(promise)
+        await Promise.all(new_promises)
         recordset = await self._new(records, True)
         return recordset
 
-    async def write(self, values):
-        if not values:
+    async def write(self, value):
+        if not value:
             promises = []
             for record in iterable(self):
-                promises.push(record.write(values=record._values[0].data))
+                promises.push(record.write(record._values[0].data))
             await Promise.all(promises)
             return self
         promises = []
         related_field_values = {}
         for key in dict(value):
             item = value[key]
-            if key not in self._fields: del value[key] #raise new (Error(key + ' is not registered as ' + self._name + ' fields'))
+            if key not in self._fields: continue #raise new (Error(key + ' is not registered as ' + self._name + ' fields'))
             if self._fields[key].type == 'binary':
-                if typeof(item) == 'string': continue
+                if typeof(item) == 'string' or not item: continue
                 if not isinstance(item, FormData): raise new (Error('fields.Binary must be string (URL) or FormData (with keys file and type as the binary data and the mime type)'))
                 else:
                     promises.push(self.env['ir.attachment'].saveToFilesystem(item.get('file'), item.get('type')).then(lambda result: Object.assign(value, {key: '/attachments/' + result.name + '?id=' + result.id})))
-            elif self._fields[key].type == 'one2many': del value[key] 
+            elif self._fields[key].type == 'one2many':
+                for child in item:
+                    if typeof(child) == 'string':
+                        if self.ids.length != 1: raise new (Error('Writing one2many fields is only possible in singleton recordset'))
+                        promise = self.env[self._fields[key].relation].browse(child).then(lambda records: records.write({self._fields[key].inverse: self.id}))
+                        promises.push(promise)
+                    elif not Array.isArray(child):
+                        if child.id:
+                            promise = self.env[self._fields[key].relation].browse(child.id).then(lambda records: records.write(child))
+                            promises.push(promise)
+                        else:
+                            #if self.ids.length != 1: raise new (Error('Writing one2many fields is only possible in singleton recordset'))
+                            for record in iterable(self):
+                                child[self._fields[key].inverse] = record.id
+                                promise = self.env[self._fields[key].relation].create(child)
+                                promises.push(promise)
+                del value[key]
             elif self._fields[key].related and '.' in self._fields[key].related:
                 related, related_field = self._fields[key].related.split('.')
                 if not related_field_values[related]: related_field_values[related] = {}
                 related_field_values[related][related_field] = item
-        for record in iterable(self):
-            for field in dict(related_field_values):
-                promises.push(self._new({'id': record[field], 'data': {}}).write(related_field_values[field]))
+        #for record in iterable(self):
+        #    for field in dict(related_field_values):
+        #        promises.push(self._new({'id': record[field], 'data': {}}).write(related_field_values[field]))
         await Promise.all(promises)
         ids = self.ids
         update = self.env[self._name]._db_orm.update(self.env[self._name]._db_orm_table)
@@ -159,17 +207,18 @@ class Model:
         recordset = await self._new(records, True)
         return recordset
 
-    async def browse(self, ids):
+    async def browse(self, ids, **params):
         if not Array.isArray(ids): ids = [ids]
         query = new (QueryBuilder())
         records = await self._exec(query.select({'*': __('*', sql)})['from'](sql.raw(f'{self._table_name}')).where(expressions.inArray(self.env[self._name]._db_orm_table.id, ids)).toSQL())
-        recordset = await self._new(records, True)
+        recordset = await self._new(records, True if not params.count else False)
         return recordset
 
     async def search(self, domain, **params): #limit=100, page=1, order=''):
         limit = params.limit or 0
         page = params.page or 1
-        order = params.order or ''
+        order = params.order or "data->'create_date' desc"
+        order = sql.raw(order)
         offset = params.offset or ((page - 1) * limit)
         query = {}
         start_or = False
@@ -177,10 +226,16 @@ class Model:
         table = self.env[self._name]._db_orm_table
         for args in domain:
             field, operator, value = args
+            if field == 'id':
+                if operator == '=': conditions.push(expressions.eq(self.env[self._name]._db_orm_table.id, value))
+                elif operator == '!=': conditions.push(expressions.ne(self.env[self._name]._db_orm_table.id, value))
+                elif operator == 'in': conditions.push(expressions.inArray(self.env[self._name]._db_orm_table.id, value))
+                elif operator == 'not in': conditions.push(expressions.notInArray(self.env[self._name]._db_orm_table.id, value))
+                continue
             if operator == '=': conditions.push(expressions.eq(sql.raw(f"data->'{field}'"), sql.raw(f"'{JSON.stringify(value)}'::jsonb")))
             elif operator == '!=': conditions.push(expressions.ne(sql.raw(f"data->'{field}'"), sql.raw(f"'{JSON.stringify(value)}'::jsonb")))
-            elif operator == 'in': conditions.push(expressions.inArray(sql.raw(f"data->'{field}'"), sql.raw(f"'{JSON.stringify(value)}'::jsonb")))
-            elif operator == 'not in': conditions.push(expressions.notInArray(sql.raw(f"data->'{field}'"), sql.raw(f"'{JSON.stringify(value)}'::jsonb")))
+            elif operator == 'in': conditions.push(expressions.inArray(sql.raw(f"data->'{field}'"), [sql.raw(f"'{JSON.stringify(item)}'::jsonb") for item in value]))
+            elif operator == 'not in': conditions.push(expressions.notInArray(sql.raw(f"data->'{field}'"), [sql.raw(f"'{JSON.stringify(item)}'::jsonb") for item in value]))
             elif operator == '>': conditions.push(expressions.gt(sql.raw(f"data->'{field}'"), sql.raw(f"'{JSON.stringify(value)}'::jsonb")))
             elif operator == '>=': conditions.push(expressions.gte(sql.raw(f"data->'{field}'"), sql.raw(f"'{JSON.stringify(value)}'::jsonb")))
             elif operator == '<': conditions.push(expressions.lt(sql.raw(f"data->'{field}'"), sql.raw(f"'{JSON.stringify(value)}'::jsonb")))
@@ -207,6 +262,7 @@ class Model:
                 sql_conditions.push(item)
             condition = sql_conditions[0] if sql_conditions.length == 1 else expressions['and'](*sql_conditions)
             query = query.where(condition)
+        query = query.orderBy(order)
         records = await self._exec(query.toSQL())
         recordset = await self._new(records, True if not params.count else False)
         return recordset
@@ -235,7 +291,7 @@ class Model:
             related_data = {}
             for field in single_level_related_fields:
                 related_data[field.name] = record._values[0].data[field.related]
-            values.push(Object.assign(record._values[0].data, related_data, {'id': record.id}))
+            values.push(Object.assign(record._values[0].data, related_data, {'id': record.id, '_fields': undefined}))
         if self.length == 1: return values[0]
         return values
 

@@ -46,6 +46,9 @@ def Selection(selection, **params):
     if selection.selection:
         selection = selection.selection
         params = selection
+    if not Array.isArray(selection):
+        params = selection
+        selection = []
     return field_factory({'type': 'selection', 'selection': selection, 'string': params.string, 'store': params.store if 'store' in params else True, 'index': params.index if 'index' in params else True}, Object.fromEntries([[attribute, params[attribute] or None] for attribute in attributes]))
 
 def Date(**params):

@@ -11,12 +11,13 @@ function getPath(hash, directoryOnly, relativeOnly) {
 }
 
 async function saveFile(buffer, mimeType) {
+  if (buffer.name === 'blob') buffer = Buffer.from(await buffer.arrayBuffer());
   const hash = crypto.createHash('sha256').update(buffer).digest('hex') + '-' + Buffer.from(mimeType).toString('hex');
-  if (!fs.exists(getPath(hash))) {
+  if (!await new Promise((resolve) => require('fs').exists(getPath(hash), resolve))) {
     try {
-      await fs.mkdir(getPath(hash, true), {recursive: true});
+      await fs.mkdir(getPath(hash, true), { recursive: true });
     }
-    catch (error) {}
+    catch (error) { }
     fs.writeFile(getPath(hash), buffer);
   }
   return hash
@@ -26,4 +27,4 @@ async function deleteFile(hashed) {
   await fs.unlink(getPath(hashed));
 }
 
-module.exports = {saveFile, deleteFile, getPath};
+module.exports = { saveFile, deleteFile, getPath };
